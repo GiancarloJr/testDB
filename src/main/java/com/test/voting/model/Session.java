@@ -45,8 +45,4 @@ public class Session implements Serializable {
     @Column(name = "tp_status", nullable = false)
     private SessionStatus status;
 
-    public boolean isExpired() {
-        return expirationTime != null && expirationTime.isBefore(LocalDateTime.now());
-    }
-
 }
