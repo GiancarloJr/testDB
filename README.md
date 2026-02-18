@@ -4,25 +4,6 @@ Este projeto é uma API REST para gerenciamento de sessões de votação e proce
 
 ---
 
-### 🏛️ Justificativa Técnica (Decisões de Projeto)
-
-A seção foi dividida em dois tópicos principais para facilitar a leitura e o entendimento do avaliador:
-
-1.  **Pontos Críticos Identificados:**
-    *   **Volumetria:** Suporte a picos de centenas de milhares de votos/minuto.
-    *   **Concorrência:** Garantia de integridade (voto único) sob alta carga.
-    *   **Gargalo de I/O:** Proteção do banco de dados relacional.
-    *   **Disponibilidade:** Resiliência contra lentidão em serviços externos.
-
-2.  **Soluções Detalhadas:**
-    *   **RabbitMQ:** Explicação do uso de mensageria para retorno imediato de `202 Accepted`, desacoplando a thread HTTP do processamento pesado.
-    *   **Redis como "Escudo":** Detalhamento de como as validações de sessão e duplicidade em memória protegem o PostgreSQL de leituras repetitivas.
-    *   **JDBC Batching:** Justificativa da escrita em lote pelo consumidor para otimizar transações e performance de disco.
-    *   **Quartz Scheduler:** Garantia de consistência temporal no ciclo de vida das sessões.
-    *   **Nginx:** Papel do proxy no balanceamento e escalabilidade.
-
----
-
 ### 🚀 Tecnologias e Bibliotecas (Libs)
 
 O projeto foi desenvolvido utilizando o ecossistema **Java 21** e **Spring Boot 4.0.2**. Abaixo estão as principais bibliotecas:
@@ -143,7 +124,7 @@ curl --request POST \
 "votingTimeMinutes": 5
 }'
 
-![img.png](src/main/resources/images/img_2.png)
+![img_2.png](src/main/resources/images/img_2.png)
 
 2. Votar:
 
@@ -163,7 +144,7 @@ curl --request POST \
 curl --request GET \
 --url http://localhost:8080/api/session/result/1
 
-![img_2.png](src/main/resources/images/img_2.png)
+![img.png](src/main/resources/images/img.png)
 
 ---
 
