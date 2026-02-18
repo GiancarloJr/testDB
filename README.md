@@ -38,40 +38,7 @@ A solução utiliza uma arquitetura baseada em containers para facilitar o deplo
 
 Abaixo, o fluxo simplificado de como um voto é processado desde a requisição até a persistência:
 
-```mermaid
----
-config:
-  layout: elk
----
-flowchart LR
- subgraph API["Voting API Cluster xN"]
-        C["VoteConsumer - Batch Writer"]
-        P["VotePublisher"]
-        A["API - /votes"]
-  end
- subgraph EXT["External"]
-        CPF["CPF Validator Fake - Facade"]
-  end
- subgraph CACHE["Cache"]
-        R[("Redis")]
-  end
- subgraph MQ["Messaging"]
-        Q[["main.queue"]]
-        X(("RabbitMQ Exchange"))
-  end
- subgraph DB["Database"]
-        PG[("Postgres")]
-  end
-    U["Users"] --> LB["NGINX - Load Balancer"]
-    LB --> A
-    A -- validate cpf --> CPF
-    A -- "redis get-set session and dedupe" --> R
-    A --> P
-    P -- publish valid votes --> X
-    X --> Q
-    Q -- consume prefetch and batch --> C
-    C -- batch insert --> PG
-```
+![diagram.png](src/main/resources/images/diagram.png)
 ---
 
 ### 🏛️ Justificativa Técnica (Decisões de Projeto)
