@@ -46,12 +46,6 @@ class VoteConsumerTest {
         when(jsonMessageConverter.fromMessage(msg)).thenReturn(voteMessage);
     }
 
-    private Message createMessage(long deliveryTag) {
-        MessageProperties props = new MessageProperties();
-        props.setDeliveryTag(deliveryTag);
-        return new Message("{}".getBytes(), props);
-    }
-
     @Test
     void shouldAckAndInsertBatchOnSuccess() throws IOException {
 
@@ -73,5 +67,11 @@ class VoteConsumerTest {
 
         verify(channel).basicAck(10L, true);
         verify(routingPublisher).routeRetryOrDlq(eq(msg), any(RuntimeException.class));
+    }
+
+    private Message createMessage(long deliveryTag) {
+        MessageProperties props = new MessageProperties();
+        props.setDeliveryTag(deliveryTag);
+        return new Message("{}".getBytes(), props);
     }
 }

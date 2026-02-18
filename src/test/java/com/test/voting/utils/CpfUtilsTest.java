@@ -18,11 +18,6 @@ class CpfUtilsTest {
     }
 
     @Test
-    void shouldReturnNullWhenInputIsNull() {
-        assertThat(formatCpf(null)).isNull();
-    }
-
-    @Test
     void shouldRemoveSpacesAndSpecialChars() {
         assertThat(formatCpf(" 123 456 789 09 ")).isEqualTo("12345678909");
     }

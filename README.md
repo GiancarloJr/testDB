@@ -58,7 +58,6 @@ graph TD
     
     J -.-> L
 ```
-![Diagrama](https://www.mermaid.ai/d/e17c7db7-4d16-48ca-9610-9caf3337007e)
 ---
 
 ### ⚙️ Como Executar

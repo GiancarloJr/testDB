@@ -66,7 +66,7 @@ class SessionValidationCacheTest {
     }
 
     @Test
-    void shouldFallbackToDbWhenCacheMiss_andWriteWithExpectedTtl() throws Exception {
+    void shouldFallbackToDbWhenCacheMiss_andWriteWithExpectedTtl() {
         Instant expiresAt = TIME_NOW.plus(Duration.ofHours(1));
 
         Session session = Session.builder()
@@ -96,7 +96,7 @@ class SessionValidationCacheTest {
     }
 
     @Test
-    void shouldFallbackToDbWhenCacheParsingFails_andRewriteCache() throws Exception {
+    void shouldFallbackToDbWhenCacheParsingFails_andRewriteCache() {
         Instant expiresAt = TIME_NOW.plus(Duration.ofMinutes(5));
 
         Session session = Session.builder()

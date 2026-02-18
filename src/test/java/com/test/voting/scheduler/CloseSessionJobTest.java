@@ -28,8 +28,6 @@ class CloseSessionJobTest {
     @Mock
     private JobDetail jobDetail;
 
-    private Session session;
-
     @InjectMocks
     private CloseSessionJob closeSessionJob;
 
