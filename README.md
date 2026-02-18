@@ -39,24 +39,38 @@ A solução utiliza uma arquitetura baseada em containers para facilitar o deplo
 Abaixo, o fluxo simplificado de como um voto é processado desde a requisição até a persistência:
 
 ```mermaid
-graph TD
-    A[Usuário/Postman] -->|POST /v1/votes| B(Nginx Load Balancer)
-    B --> C[Voting App - Controller]
-    C --> D{Valida Sessão no Redis}
-    D -- Fechada/Expirada --> E[Retorna Erro 409]
-    D -- Aberta --> F{Valida CPF Externo}
-    F -- Inválido/Não Autorizado --> G[Retorna Erro 403]
-    F -- Autorizado --> H{Verifica Voto Duplicado no Redis}
-    H -- Já Votou --> I[Retorna Erro 409]
-    H -- Inédito --> J[Envia p/ Fila RabbitMQ]
-    J --> K[Retorna 202 Accepted]
-    
-    subgraph Processamento Assíncrono
-    L[RabbitMQ Queue] --> M[Consumer - Batch Inserter]
-    M --> N[(PostgreSQL DB)]
-    end
-    
-    J -.-> L
+---
+config:
+  layout: elk
+---
+flowchart LR
+ subgraph API["Voting API Cluster xN"]
+        C["VoteConsumer - Batch Writer"]
+        P["VotePublisher"]
+        A["API - /votes"]
+  end
+ subgraph EXT["External"]
+        CPF["CPF Validator Fake - Facade"]
+  end
+ subgraph CACHE["Cache"]
+        R[("Redis")]
+  end
+ subgraph MQ["Messaging"]
+        Q[["main.queue"]]
+        X(("RabbitMQ Exchange"))
+  end
+ subgraph DB["Database"]
+        PG[("Postgres")]
+  end
+    U["Users"] --> LB["NGINX - Load Balancer"]
+    LB --> A
+    A -- validate cpf --> CPF
+    A -- "redis get-set session and dedupe" --> R
+    A --> P
+    P -- publish valid votes --> X
+    X --> Q
+    Q -- consume prefetch and batch --> C
+    C -- batch insert --> PG
 ```
 ---
 
@@ -102,6 +116,10 @@ Esta arquitetura foi desenhada para suportar cenários reais de votação em mas
     docker-compose up -d --build
     ```
 3.  A API estará disponível em `http://localhost:8080`.
+4. Para subir mais de uma instancia:
+   ```bash
+    docker compose up -d --scale app=2
+    ```
 
 ---
 

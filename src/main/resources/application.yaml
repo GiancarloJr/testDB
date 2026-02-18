@@ -70,7 +70,7 @@ spring:
             misfireThreshold: 30000
 
 server:
-  port: 8081
+  port: 8080
   tomcat:
     threads:
       max: 200
