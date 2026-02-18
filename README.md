@@ -4,6 +4,25 @@ Este projeto é uma API REST para gerenciamento de sessões de votação e proce
 
 ---
 
+### 🏛️ Justificativa Técnica (Decisões de Projeto)
+
+A seção foi dividida em dois tópicos principais para facilitar a leitura e o entendimento do avaliador:
+
+1.  **Pontos Críticos Identificados:**
+    *   **Volumetria:** Suporte a picos de centenas de milhares de votos/minuto.
+    *   **Concorrência:** Garantia de integridade (voto único) sob alta carga.
+    *   **Gargalo de I/O:** Proteção do banco de dados relacional.
+    *   **Disponibilidade:** Resiliência contra lentidão em serviços externos.
+
+2.  **Soluções Detalhadas:**
+    *   **RabbitMQ:** Explicação do uso de mensageria para retorno imediato de `202 Accepted`, desacoplando a thread HTTP do processamento pesado.
+    *   **Redis como "Escudo":** Detalhamento de como as validações de sessão e duplicidade em memória protegem o PostgreSQL de leituras repetitivas.
+    *   **JDBC Batching:** Justificativa da escrita em lote pelo consumidor para otimizar transações e performance de disco.
+    *   **Quartz Scheduler:** Garantia de consistência temporal no ciclo de vida das sessões.
+    *   **Nginx:** Papel do proxy no balanceamento e escalabilidade.
+
+---
+
 ### 🚀 Tecnologias e Bibliotecas (Libs)
 
 O projeto foi desenvolvido utilizando o ecossistema **Java 21** e **Spring Boot 4.0.2**. Abaixo estão as principais bibliotecas:
@@ -60,6 +79,40 @@ graph TD
 ```
 ---
 
+### 🏛️ Justificativa Técnica (Decisões de Projeto)
+
+Esta arquitetura foi desenhada para suportar cenários reais de votação em massa, priorizando a escalabilidade horizontal e a proteção dos recursos de armazenamento.
+
+#### 1. Quais os Pontos Críticos?
+*   **Volumetria e Picos de Acesso:** Necessidade de processar centenas de milhares de votos por minuto sem degradar o tempo de resposta (latência).
+*   **Concorrência e Integridade:** Garantir que as regras de negócio (voto único por CPF e sessão ativa) sejam respeitadas mesmo sob altíssima concorrência simultânea.
+*   **Gargalo de Persistência:** Evitar o travamento do banco de dados relacional (PostgreSQL) por excesso de conexões e transações individuais de escrita.
+*   **Disponibilidade e Resiliência:** O sistema deve continuar aceitando votos mesmo se o banco de dados ou serviços externos estiverem temporariamente lentos.
+
+#### 2. Como esses pontos foram solucionados?
+
+*   **Processamento Assíncrono (RabbitMQ):**
+    *   **Detalhe:** Em vez de realizar o `INSERT` no banco durante a requisição HTTP, o voto é validado e postado em uma fila.
+    *   **Benefício:** A API responde `202 Accepted` em milissegundos. Isso evita o acúmulo de threads no Spring Boot e permite que o sistema suporte picos de carga sem "derrubar" o servidor.
+
+*   **Validação em Memória - Redis como "Escudo":**
+    *   **Detalhe:** Todas as validações críticas (A sessão está aberta? Este CPF já votou?) são feitas contra o **Redis**.
+    *   **Benefício:** Como o Redis opera em memória, a validação leva menos de 1ms. Isso protege o PostgreSQL de consultas repetitivas de leitura, reservando-o apenas para a persistência final dos dados válidos.
+
+*   **Escrita Otimizada em Lote (JDBC Batching):**
+    *   **Detalhe:** O consumidor da fila não insere um voto por vez. Ele agrupa centenas de votos em memória e realiza um único comando de `Batch Insert` via JDBC.
+    *   **Benefício:** Reduz drasticamente o número de transações e o overhead de rede/disco no PostgreSQL, aumentando a vazão de escrita em até 10x em comparação com inserções individuais.
+
+*   **Controle Temporal de Sessões (Quartz Scheduler):**
+    *   **Detalhe:** O Quartz é utilizado para gerenciar o estado das sessões de forma precisa e persistente.
+    *   **Benefício:** Garante que, assim que o tempo de votação expire, a sessão seja marcada como fechada no banco e no cache, mantendo a consistência mesmo se a aplicação for reiniciada.
+
+*   **Balanceamento e Camada de Rede (Nginx):**
+    *   **Detalhe:** O Nginx atua como porta de entrada, distribuindo o tráfego e protegendo a aplicação de conexões diretas.
+    *   **Benefício:** Facilita a escalabilidade horizontal (adicionar mais instâncias da App) e melhora a segurança.
+
+---
+
 ### ⚙️ Como Executar
 
 1.  Certifique-se de ter o **Docker** e **Docker Compose** instalados.
@@ -75,3 +128,47 @@ graph TD
 - **Abrir Sessão**: Define um tempo de duração (default 1 min).
 - **Votar**: Validação de CPF, duplicidade e processamento assíncrono.
 - **Resultado**: Contabilização de votos por sessão.
+
+---
+
+### Curl para testar as endpoints
+
+1. Criar pauta:
+
+curl --request POST \
+--url http://localhost:8081/api/session \
+--header 'Content-Type: application/json' \
+--data '{
+"description": "Pauta",
+"votingTimeMinutes": 5
+}'
+
+![img.png](src/main/resources/images/img_2.png)
+
+2. Votar:
+
+curl --request POST \
+--url http://localhost:8081/api/votes \
+--header 'Content-Type: application/json' \
+--data '{
+"sessionId": 9,
+"cpf": "59186232134",
+"vote": "YES"
+}'
+
+![img_1.png](src/main/resources/images/img_1.png)
+
+3. Buscar Resultado:
+
+curl --request GET \
+--url http://localhost:8080/api/session/result/1
+
+![img_2.png](src/main/resources/images/img_2.png)
+
+---
+
+### Docker Container
+
+![img.png](img_docker.png)
+
+---
