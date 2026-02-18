@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="001-create-session-table" author="gmartins">
+        <createTable tableName="session" schemaName="public">
+            <column name="id_session" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_session" nullable="false"/>
+            </column>
+            <column name="nm_description" type="VARCHAR(255)" >
+                <constraints nullable="false"/>
+            </column>
+            <column name="dt_created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="qt_voting_time_minutes" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="dt_expiration_time" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tp_status" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="002-create-vote-table" author="gmartins">
+        <createTable tableName="vote">
+            <column name="id_vote" type="bigint">
+                <constraints primaryKey="true" primaryKeyName="pk_vote" nullable="false"/>
+            </column>
+            <column name="session_id" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cd_cpf" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tp_vote" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="dt_created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="003-add-fk-vote-session" author="gmartins">
+        <addForeignKeyConstraint
+                baseTableName="vote"
+                baseColumnNames="session_id"
+                constraintName="fk_vote_session"
+                referencedTableName="session"
+                referencedColumnNames="id_session"
+                onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="004-add-unique-constraint-vote" author="gmartins">
+        <addUniqueConstraint
+                tableName="vote"
+                columnNames="session_id, cd_cpf"
+                constraintName="uk_vote_session_cpf"/>
+    </changeSet>
+
+    <changeSet id="005-add-autoincrement-vote-id" author="gmartins">
+        <addAutoIncrement
+                tableName="vote"
+                columnName="id_vote"
+                columnDataType="bigint"
+                generationType="ALWAYS"
+                startWith="1"
+                incrementBy="1"/>
+    </changeSet>
+
+</databaseChangeLog>
