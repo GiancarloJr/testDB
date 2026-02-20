@@ -19,6 +19,12 @@ services:
       postgres
         -c max_connections=100
         -c shared_buffers=256MB
+    healthcheck:
+          test: ["CMD-SHELL", "pg_isready -U admin -d votacao-db"]
+          interval: 5s
+          timeout: 5s
+          retries: 20
+          start_period: 10s
     deploy:
       resources:
         limits:
@@ -37,6 +43,12 @@ services:
         --maxmemory-policy allkeys-lru
         --save ""
         --appendonly no
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
     deploy:
       resources:
         limits:
@@ -55,6 +67,12 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - votacao-network
+    healthcheck:
+      test: [ "CMD-SHELL", "rabbitmq-diagnostics -q ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
     deploy:
       resources:
         limits:
@@ -81,9 +99,12 @@ services:
       TZ: America/Sao_Paulo
       JAVA_TOOL_OPTIONS: "-Duser.timezone=America/Sao_Paulo"
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - votacao-network
     expose:
